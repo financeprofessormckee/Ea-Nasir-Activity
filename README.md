@@ -34,7 +34,6 @@ This activity is perfect for courses in finance, economics, risk management, and
 * How differing legal and institutional environments (weak vs. strong) alter risk calculations
 
 ## Educator Guide: Classroom Integration
-
 This simulation is designed as a supplementary tool for teaching **Risk and Reward Tradeoffs**, **Business Ethics**, **Quality Control**, and **Institutional Economics**.
 
 ### The Simulation Mechanics
@@ -42,21 +41,6 @@ To help students understand the underlying concepts, the tool relies on the foll
 * **Inspection Costs vs. Defect Risks:** Students must decide how carefully to inspect shipments. High inspection reduces profit margins but prevents defective copper from reaching the buyer. Skipping inspections saves money upfront but drastically increases the risk of defects.
 * **The Cost of Failure:** Defective shipments trigger immediate financial losses (refunds) and intangible losses (reputation damage). 
 * **Institutional Environments:** The game calculates risk differently based on the chosen market. The **Ancient Bazaar** models weak institutions where word-of-mouth and reputation are the only enforcement mechanisms. The **Modern Corporate** setting models strong institutions where courts enforce contracts, making legal violations financially devastating.
-
-### Assignment Suggestions
-You can use this interactive tool as the foundation for a homework assignment, discussion board, or case study write-up.
-
-**1. Strategy Comparison Write-Up**
-Have students play the game multiple times, adopting a different Trading Philosophy each time (Short-Term Maximizer, Reputation Builder, Risk Minimizer). Have them record their final profits and write a short reflection on which strategy yielded the best risk-adjusted return over the full 10 rounds. 
-
-**2. Institutional Impact Analysis**
-Assign half the class to play in the "Ancient Bazaar" and the other half in the "Modern Corporate" setting. Have students submit their final scores and their average inspection rates. Use the aggregated class data to illustrate how different legal frameworks dictate corporate behavior and risk tolerance.
-
-### Discussion Prompts
-* At what point in the simulation did the cost of refunds and reputation damage outweigh the short-term savings of skipping inspections?
-* How did your risk calculation change when moving from a reputation-based market (Ancient Bazaar) to a legally enforced market (Modern Corporate)?
-* In the real world, how do modern companies quantify the "reputation damage" of a defective product, and how does it compare to the immediate cost of a recall? 
-* If you played as the "Short-Term Maximizer," did you manage to survive all 10 rounds? Why or why not?
 
 ## Getting Started
 Ready to test your skills in the copper trade? 
