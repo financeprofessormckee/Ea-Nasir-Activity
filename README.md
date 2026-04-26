@@ -47,5 +47,13 @@ Ready to test your skills in the copper trade?
 
 **[Begin Trading →](https://financeprofessormckee.github.io/Ea-Nasir-Activity/)**
 
+
+### License and Citation
+
+The source code for this web application is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute the software.
+
+The pedagogical framing, narrative text, and specific simulation parameters (The "Ea-Nasir" scenario) are the intellectual property of Eric McKee. If you use or adapt this simulation for your own courses, please cite this repository.
+
 ---
 *Created by [Eric McKee](https://github.com/financeprofessormckee).*
+
