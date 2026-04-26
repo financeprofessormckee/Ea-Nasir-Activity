@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ea-Nasir: The Copper Merchant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SETUP SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-setup" class="screen active">
+    <div class="card">
+      <div class="logo-area">
+        <div class="logo-glyph">𒀭</div>
+        <h1>Ea-Nasir</h1>
+        <p class="subtitle">The Copper Merchant</p>
+      </div>
+
+      <p class="intro-text">
+        You are a copper merchant. Over <strong>10 trading rounds</strong>, you will ship
+        copper ingots to buyers and decide how carefully to inspect each shipment.
+        Defective copper means refunds, reputation damage — and sometimes worse.
+        <br><br>
+        Will short-term corner-cutting actually pay off?
+      </p>
+
+      <section class="setup-section">
+        <h3>Choose Your Market</h3>
+        <div class="two-col" id="institution-selector">
+          <div class="option-card selected" data-value="weak"
+               onclick="selectOption('institution-selector','weak')">
+            <div class="option-icon">🏺</div>
+            <div class="option-title">Ancient Bazaar</div>
+            <div class="option-body">Weak institutions. Your reputation is your only
+              contract — word of bad copper spreads fast.</div>
+          </div>
+          <div class="option-card" data-value="strong"
+               onclick="selectOption('institution-selector','strong')">
+            <div class="option-icon">🏛️</div>
+            <div class="option-title">Modern Corporate</div>
+            <div class="option-body">Strong institutions. Courts enforce contracts,
+              but legal violations are very costly.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="setup-section">
+        <h3>Your Trading Philosophy <span class="label-optional">optional</span></h3>
+        <div class="three-col" id="personality-selector">
+          <div class="option-card" data-value="maximizer"
+               onclick="selectOption('personality-selector','maximizer')">
+            <div class="option-title">Short-Term Maximizer</div>
+            <div class="option-body">Profit now, worry later</div>
+          </div>
+          <div class="option-card" data-value="builder"
+               onclick="selectOption('personality-selector','builder')">
+            <div class="option-title">Reputation Builder</div>
+            <div class="option-body">Play the long game</div>
+          </div>
+          <div class="option-card" data-value="minimizer"
+               onclick="selectOption('personality-selector','minimizer')">
+            <div class="option-title">Risk Minimizer</div>
+            <div class="option-body">Avoid catastrophic losses</div>
+          </div>
+        </div>
+      </section>
+
+      <button class="btn-primary" onclick="startGame()">Begin Trading →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ROUND SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-round" class="screen">
+    <div class="card">
+      <div class="round-header">
+        <span class="round-label">Round <span id="round-num">1</span> / 10</span>
+        <span class="inst-badge" id="inst-badge">Ancient Bazaar</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Silver</div>
+          <div class="stat-value" id="stat-silver">200</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Reputation</div>
+          <div class="stat-value" id="stat-rep">70</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Legal Risk</div>
+          <div class="stat-value risk-badge" id="stat-risk">Medium</div>
+        </div>
+      </div>
+
+      <div class="flavor-box">
+        <p id="flavor-text"></p>
+      </div>
+
+      <h3>Quality Assurance Level</h3>
+      <div class="qa-selector" id="qa-selector">
+        <div class="option-card qa-card" data-value="none"
+             onclick="selectOption('qa-selector','none')">
+          <div class="qa-meta">Cost: 0 ◆ &nbsp;|&nbsp; 40% defect chance</div>
+          <div class="option-title">No QA</div>
+          <div class="option-body">Ship as-is. Fast and free.</div>
+        </div>
+        <div class="option-card qa-card selected" data-value="basic"
+             onclick="selectOption('qa-selector','basic')">
+          <div class="qa-meta">Cost: 10 ◆ &nbsp;|&nbsp; 20% defect chance</div>
+          <div class="option-title">Basic QA</div>
+          <div class="option-body">Spot-check the ingots.</div>
+        </div>
+        <div class="option-card qa-card" data-value="strict"
+             onclick="selectOption('qa-selector','strict')">
+          <div class="qa-meta">Cost: 25 ◆ &nbsp;|&nbsp; 5% defect chance</div>
+          <div class="option-title">Strict QA</div>
+          <div class="option-body">Full inspection. Peace of mind.</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="sendShipment()">Send Shipment →</button>
+
+      <div id="sparkline-wrap-round" class="sparkline-wrap hidden">
+        <div class="sparkline-title">Profit history</div>
+        <div class="sparkline" id="sparkline-round"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       OUTCOME SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-outcome" class="screen">
+    <div class="card">
+      <div class="round-header">
+        <span class="round-label">Round <span id="outcome-round">1</span> Result</span>
+      </div>
+
+      <div id="outcome-banner" class="outcome-banner outcome-good">
+        <div class="outcome-icon" id="outcome-icon">✓</div>
+        <div class="outcome-title" id="outcome-title">Good Shipment</div>
+        <div class="outcome-sub" id="outcome-sub">The buyer accepts the copper.</div>
+      </div>
+
+      <table class="ledger-table">
+        <tbody>
+          <tr>
+            <td>Revenue</td>
+            <td id="ld-revenue" class="positive">+100 ◆</td>
+          </tr>
+          <tr id="ld-rev-penalty-row">
+            <td>Revenue penalty (low reputation)</td>
+            <td id="ld-rev-penalty" class="negative">−20 ◆</td>
+          </tr>
+          <tr>
+            <td>QA Cost</td>
+            <td id="ld-qa-cost">−10 ◆</td>
+          </tr>
+          <tr id="ld-refund-row">
+            <td>Refund to Buyer</td>
+            <td id="ld-refund" class="negative">−30 ◆</td>
+          </tr>
+          <tr id="ld-lawsuit-row">
+            <td>Lawsuit Settlement</td>
+            <td id="ld-lawsuit" class="negative">−80 ◆</td>
+          </tr>
+          <tr class="ledger-total">
+            <td>Round Profit</td>
+            <td id="ld-total">+90 ◆</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="rep-meter">
+        <div class="rep-meter-header">
+          <span class="stat-label">Reputation</span>
+          <div class="rep-meter-values">
+            <span id="rep-before">70</span>
+            <span class="rep-arrow">→</span>
+            <span id="rep-after">73</span>
+            <span id="rep-delta" class="rep-delta positive">(+3)</span>
+          </div>
+        </div>
+        <div class="rep-bar-track">
+          <div class="rep-bar-fill" id="rep-bar"></div>
+        </div>
+      </div>
+
+      <div id="lawsuit-box" class="lawsuit-box hidden">
+        ⚖️ <strong>Lawsuit Filed!</strong> <span id="lawsuit-desc"></span>
+      </div>
+
+      <div class="sparkline-wrap">
+        <div class="sparkline-title">Profit history</div>
+        <div class="sparkline" id="sparkline-outcome"></div>
+      </div>
+
+      <button class="btn-primary" id="btn-next" onclick="nextRound()">Next Round →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       DEBRIEF SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-debrief" class="screen">
+    <div class="card">
+      <div class="logo-area">
+        <h1>Final Ledger</h1>
+        <p class="subtitle" id="debrief-inst-name">Ancient Bazaar</p>
+      </div>
+
+      <div class="final-stats-grid">
+        <div class="final-stat">
+          <div class="final-stat-label">Final Silver</div>
+          <div class="final-stat-value" id="db-silver">—</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Final Reputation</div>
+          <div class="final-stat-value" id="db-rep">—</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Defective Shipments</div>
+          <div class="final-stat-value" id="db-defects">—</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Lawsuits Filed</div>
+          <div class="final-stat-value" id="db-lawsuits">—</div>
+        </div>
+      </div>
+
+      <div class="sparkline-wrap">
+        <div class="sparkline-title">Profit per round</div>
+        <div class="sparkline" id="sparkline-debrief"></div>
+      </div>
+
+      <div class="debrief-section counterfactual-section">
+        <h3>What if you had always chosen Basic QA?</h3>
+        <div id="db-counterfactual"></div>
+      </div>
+
+      <div class="debrief-section">
+        <h3>Profit Volatility</h3>
+        <div id="db-volatility"></div>
+      </div>
+
+      <div id="db-personality-section" class="debrief-section hidden">
+        <h3>Behavioral Consistency</h3>
+        <div id="db-personality"></div>
+      </div>
+
+      <div class="debrief-section insights-section">
+        <h3>Key Takeaways</h3>
+        <div id="db-insights"></div>
+      </div>
+
+      <button class="btn-primary" onclick="resetGame()">Play Again</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
