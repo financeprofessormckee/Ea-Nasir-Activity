@@ -2,7 +2,7 @@
 
 [![Play the Game](https://img.shields.io/badge/Play-Live_Game-blue?style=for-the-badge)](https://financeprofessormckee.github.io/Ea-Nasir-Activity/)
 
-**Ea-Nasir: The Copper Merchant** is an interactive trading game designed as a teaching tool to explore Risk and Reward tradeoffs, business ethics, and the economic impact of institutions. 
+**Ea-Nasir: The Copper Merchant** is an interactive trading game designed as a teaching tool to explore risk and reward tradeoffs, business ethics, and the economic impact of institutions. 
 
 ## About the Game
 You are a copper merchant. Over 10 trading rounds, you will ship copper ingots to buyers and decide how carefully to inspect each shipment. Defective copper means refunds, reputation damage — and sometimes worse. 
