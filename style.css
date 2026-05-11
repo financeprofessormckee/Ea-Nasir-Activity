@@ -22,13 +22,18 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Josefin Sans', system-ui, sans-serif;
   min-height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 28px 16px 56px;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 56px;
 }
+
+/* COB masthead spans full width; restore breathing room above the activity */
+.cob-brand { align-self: stretch; }
+.cob-brand + .screen,
+.cob-brand ~ .screen { margin-top: 28px; padding: 0 16px; }
 
 /* ── Screens ─────────────────────────────────────────────── */
 
@@ -140,10 +145,37 @@ p {
 }
 
 .qa-meta {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: .72rem;
   color: var(--warning);
   margin-bottom: 5px;
+}
+
+/* ── Pre-send summary bar ────────────────────────────────── */
+
+.pre-send-summary {
+  background: #f2e8d8;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: .88rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.summary-label { color: var(--text); }
+
+.summary-net { font-weight: 700; }
+
+.summary-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 5px 0;
 }
 
 /* ── Primary button ──────────────────────────────────────── */
@@ -156,8 +188,8 @@ p {
   border: none;
   border-radius: var(--r);
   padding: 13px 20px;
+  font-family: inherit;
   font-size: 1rem;
-  font-family: Georgia, serif;
   font-weight: 700;
   cursor: pointer;
   margin-top: 6px;
@@ -177,7 +209,6 @@ p {
 }
 
 .round-label {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: .8rem;
   color: var(--muted);
   font-weight: 600;
@@ -186,7 +217,6 @@ p {
 }
 
 .inst-badge {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: .72rem;
   background: #f0e0c0;
   border: 1px solid var(--border);
@@ -231,7 +261,6 @@ p {
 }
 
 .stat-label {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -345,7 +374,6 @@ p {
 .rep-delta {
   font-size: .82rem;
   font-weight: normal;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .rep-bar-track {
@@ -385,7 +413,6 @@ p {
 .sparkline-wrap.hidden { display: none; }
 
 .sparkline-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -444,7 +471,6 @@ p {
 }
 
 .final-stat-label {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: .7rem;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -487,9 +513,80 @@ p {
 
 .insights-section h3 { margin-bottom: 10px; }
 
+.lesson-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-h);
+  margin-bottom: 6px;
+}
+.lesson-coda {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.skill-luck-section {
+  background: #fdf6e8;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.strategy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0 8px;
+  font-size: 0.95rem;
+}
+.strategy-table th,
+.strategy-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.strategy-table th {
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 2px solid var(--border);
+}
+.strategy-table tr.your-row {
+  background: #fff7e0;
+  font-weight: 600;
+}
+.strategy-table tr.best-silver td:nth-child(2) {
+  color: var(--success);
+  font-weight: 700;
+}
+.strategy-table .badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #1e40af;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.table-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
 /* ── Utility ─────────────────────────────────────────────── */
 
 .hidden { display: none !important; }
+
+.bottombar {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
 
 /* ── Responsive ──────────────────────────────────────────── */
 

@@ -93,6 +93,11 @@ function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
 }
 
+function getExpectedRevenue() {
+  const cfg = INSTITUTIONS[state.institutions];
+  return getRepTier(state.reputation) === 'low' ? cfg.revenueLowRep : cfg.revenueBase;
+}
+
 // ── Game flow ──────────────────────────────────────────────────
 
 function startGame() {
@@ -218,43 +223,220 @@ function resolveRound(qaKey) {
   return record;
 }
 
-// ── Counterfactual ─────────────────────────────────────────────
+// ── Counterfactual replay ──────────────────────────────────────
 
 /*
-  Replay the full game substituting Basic QA at every round.
-  Uses the same defect rolls (same luck), only the QA decision changes.
-  Refunds for counterfactual defects use the midpoint of the refund range
-  to give a fair expected-value comparison.
+  Replay the full game substituting a fixed QA choice at every round.
+  Uses the same defect rolls captured in state.history (same luck).
+  Refund and lawsuit costs use the midpoint of their ranges so each
+  pure strategy is evaluated on its expected loss, not on fresh dice.
 */
-function computeCounterfactual() {
-  const cfg   = INSTITUTIONS[state.institutions];
-  const cfQA  = QA_OPTIONS.basic;
-  const cfRefund = Math.round((cfg.refundRange[0] + cfg.refundRange[1]) / 2);
+function replayWithFixedQA(qaKey) {
+  const cfg     = INSTITUTIONS[state.institutions];
+  const qa      = QA_OPTIONS[qaKey];
+  const refund  = Math.round((cfg.refundRange[0] + cfg.refundRange[1]) / 2);
+  const lawsuit = Math.round((cfg.lawsuitCostRange[0] + cfg.lawsuitCostRange[1]) / 2);
 
-  let cfSilver = STARTING_SILVER;
-  let cfRep    = STARTING_REP;
+  let silver = STARTING_SILVER;
+  let rep    = STARTING_REP;
 
   for (const rec of state.history) {
-    const cfRepTier   = getRepTier(cfRep);
-    const cfRevenue   = cfRepTier === 'low' ? cfg.revenueLowRep : cfg.revenueBase;
-    const cfDefective = rec.defectRoll < cfQA.defectProb;
+    const tier      = getRepTier(rep);
+    const revenue   = tier === 'low' ? cfg.revenueLowRep : cfg.revenueBase;
+    const defective = rec.defectRoll < qa.defectProb;
 
-    let cfRepChange = 0;
-    let cfLoss      = 0;
+    let repChange = 0;
+    let loss      = 0;
 
-    if (cfDefective) {
-      cfLoss = cfRefund;  // no lawsuits in counterfactual (expected value view)
-      const mult = cfg.complaintMult[cfRepTier];
-      cfRepChange = -Math.round(cfg.repDropBase * cfg.repSpeedMult * mult);
+    if (defective) {
+      // expected loss: refund + P(lawsuit) * lawsuit-cost
+      loss = refund + cfg.lawsuitProb[tier] * lawsuit;
+      const mult = cfg.complaintMult[tier];
+      repChange = -Math.round(cfg.repDropBase * cfg.repSpeedMult * mult);
     } else {
-      cfRepChange = Math.round(cfg.repGainBase * cfg.repSpeedMult);
+      repChange = Math.round(cfg.repGainBase * cfg.repSpeedMult);
     }
 
-    cfSilver += cfRevenue - cfQA.cost - cfLoss;
-    cfRep     = clamp(cfRep + cfRepChange, 0, 100);
+    silver += revenue - qa.cost - loss;
+    rep     = clamp(rep + repChange, 0, 100);
   }
 
-  return { silver: cfSilver, reputation: cfRep };
+  return { silver: Math.round(silver), reputation: Math.round(rep) };
+}
+
+function computeStrategyComparison() {
+  return {
+    none:   replayWithFixedQA('none'),
+    basic:  replayWithFixedQA('basic'),
+    strict: replayWithFixedQA('strict'),
+    actual: { silver: state.silver, reputation: state.reputation },
+  };
+}
+
+// ── Strategy classification ───────────────────────────────────
+
+/*
+  Best pure strategy by expected value, computed offline via Monte
+  Carlo over each institution's parameters. See plan verification
+  step. These are constants in shipped code, not runtime simulation.
+*/
+const EX_ANTE_OPTIMAL = { weak: 'basic', strong: 'basic' };
+
+function classifyRevealedStrategy() {
+  const counts = { none: 0, basic: 0, strict: 0 };
+  state.history.forEach(r => counts[r.qaKey]++);
+
+  let dominant = 'basic';
+  let max = -1;
+  for (const k of ['none', 'basic', 'strict']) {
+    if (counts[k] > max) { max = counts[k]; dominant = k; }
+  }
+  // call it "mixed" if the dominant choice is less than half the rounds
+  if (max < TOTAL_ROUNDS / 2) dominant = 'mixed';
+
+  const weights = { none: 0, basic: 1, strict: 2 };
+  const cautionIndex =
+    state.history.reduce((s, r) => s + weights[r.qaKey], 0) / state.history.length;
+
+  // Adaptive: did QA strictly increase after at least one defect round?
+  let adaptive = false;
+  for (let i = 1; i < state.history.length; i++) {
+    if (state.history[i - 1].isDefective &&
+        weights[state.history[i].qaKey] > weights[state.history[i - 1].qaKey]) {
+      adaptive = true;
+      break;
+    }
+  }
+
+  // Static: same QA every round
+  const isStatic = new Set(state.history.map(r => r.qaKey)).size === 1;
+
+  const exAnteOptimal = (dominant !== 'mixed') &&
+                        dominant === EX_ANTE_OPTIMAL[state.institutions];
+
+  // Stated-vs-revealed: rough mapping from stated personality to expected dominant choice
+  const personalityExpected = {
+    maximizer: 'none',
+    builder:   'basic',  // builders invest in QA but not necessarily strict
+    minimizer: 'strict',
+  };
+  const statedRevealedGap = state.personalityType &&
+    dominant !== 'mixed' &&
+    personalityExpected[state.personalityType] !== dominant;
+
+  return { counts, dominant, cautionIndex, adaptive, isStatic, exAnteOptimal, statedRevealedGap };
+}
+
+// ── Expected-value (skill vs luck) ────────────────────────────
+
+/*
+  Walk the student's actual QA choices and compute the expected
+  per-round profit using midpoint refunds and lawsuit-cost expectations.
+  This is the ex-ante value of the strategy the student played.
+*/
+function computeExpectedValue() {
+  const cfg     = INSTITUTIONS[state.institutions];
+  const refund  = (cfg.refundRange[0] + cfg.refundRange[1]) / 2;
+  const lawsuit = (cfg.lawsuitCostRange[0] + cfg.lawsuitCostRange[1]) / 2;
+
+  let silver = STARTING_SILVER;
+  let rep    = STARTING_REP;
+
+  for (const rec of state.history) {
+    const tier    = getRepTier(rep);
+    const revenue = tier === 'low' ? cfg.revenueLowRep : cfg.revenueBase;
+    const qa      = QA_OPTIONS[rec.qaKey];
+
+    const expectedLoss = qa.defectProb * (refund + cfg.lawsuitProb[tier] * lawsuit);
+    const expectedRepChange =
+      qa.defectProb * (-cfg.repDropBase * cfg.repSpeedMult * cfg.complaintMult[tier]) +
+      (1 - qa.defectProb) * (cfg.repGainBase * cfg.repSpeedMult);
+
+    silver += revenue - qa.cost - expectedLoss;
+    rep     = clamp(rep + expectedRepChange, 0, 100);
+  }
+
+  return Math.round(silver);
+}
+
+// ── Lesson selector ───────────────────────────────────────────
+
+const LESSON_LIBRARY = {
+  deathSpiral: {
+    title: 'Reputational death spiral',
+    body:  'In a weak-institution market your reputation <em>is</em> the enforcement mechanism. Every defect raises the cost of the next defect — the complaint multiplier compounds, revenue falls, and there is no court to limit the damage. This is what a reputation cascade looks like in real time.',
+  },
+  luckyWeak: {
+    title: 'You got lucky in a regime that punishes the unlucky',
+    body:  'You skipped QA in a market with no legal backstop and avoided a reputation collapse — this round. Reputation networks have heavy left-tail risk; one bad streak is usually enough to break the cycle. A 10-round sample understates how often the cascade fires.',
+  },
+  reputationAsCapital: {
+    title: 'Reputation as productive capital',
+    body:  'Under weak institutions, QA spending is not just insurance — it is investment in a productive asset. Your high-reputation revenue stayed at full strength, and that flow of payments is what the QA cost was buying. Treat reputation as a balance-sheet item, not a vibe.',
+  },
+  overInsurance: {
+    title: 'Over-insurance under formal contracts',
+    body:  'Strict QA in a strong-institution market is often dominated. Courts already cap your downside through enforceable refunds and damages, so paying 25 silver per round to push defect probability from 20% to 5% is double-paying for protection you partly already had. Check the strategy comparison: Basic QA likely beat your strategy on expected value.',
+  },
+  luckyBinary: {
+    title: 'You drew the lucky side of a binary risk',
+    body:  'Lawsuits in this regime are rare-but-large events. With ten rounds and a low per-round probability, most playthroughs of your strategy would draw zero lawsuits — but the few that do can wipe out a season. Expected value is the right lens, not the realized outcome.',
+  },
+  formalLiability: {
+    title: 'Formal liability is the binding constraint',
+    body:  'Reputation moved slowly here, but the courts did not. A single lawsuit landed the kind of blow that, in the weak-institution market, would have taken a string of bad shipments to inflict. Under strong institutions, formal liability — not reputation — is the dominant cost of corner-cutting.',
+  },
+  bayesian: {
+    title: 'Bayesian updating in practice',
+    body:  'You raised your QA after observing a defect — exactly what a rational agent does when new information arrives. Whether or not the realized outcome was favorable, the <em>policy</em> of conditioning future choices on observed signals is the right one. Most students in this game play a fixed rule for ten rounds.',
+  },
+  staticStrategy: {
+    title: 'A strategy without state-dependence',
+    body:  'You played one rule for ten rounds — your QA never changed in response to defects, lawsuits, or reputation movements. That is fine if the rule was right for the regime; it is expensive if it was not. Compare your strategy to the comparison table above.',
+  },
+  statedVsRevealed: {
+    title: 'Stated vs. revealed preferences',
+    body:  'You called yourself a {stated}, but your choices look more like a {revealed} player. The gap between what people say they value and what they actually choose under stakes is one of the oldest results in behavioral economics. The choices, not the labels, are the data.',
+  },
+  internalized: {
+    title: 'You internalized the regime\'s incentives',
+    body:  'Your dominant strategy was the expected-value-best pure strategy for {institution}. Whether you finished ahead or behind on this run was luck stacked on top of a sound choice. Replay the same strategy enough times and the average will reflect that soundness.',
+  },
+  wrongRegime: {
+    title: 'A dominated pure strategy',
+    body:  'Your dominant choice of {dominant} was beaten in expectation by Basic QA in {institution}. Basic QA cuts defect probability in half (40% → 20%) for only 10 silver per round; pushing it further to 5% costs another 15 silver per round and is rarely worth it on its own. Strict QA earns its keep mainly when used <em>adaptively</em> — escalated after a bad signal — not as a flat rule.',
+  },
+};
+
+function selectKeyLesson(cls, comparison) {
+  const inst = state.institutions;
+  const lowCaution  = cls.cautionIndex < 0.7;
+  const highCaution = cls.cautionIndex > 1.3;
+  const repCollapsed = state.reputation < 40 ||
+                       state.history.some(r => r.repAfter < 40);
+  const profitable   = state.silver >= STARTING_SILVER;
+  const beatBasicCF  = state.silver >= comparison.basic.silver;
+
+  // Adaptive behavior is more diagnostic than the level of caution,
+  // so it preempts the static high-caution lessons.
+  if (cls.adaptive) return 'bayesian';
+
+  // Layer A — institution × strategy × outcome (most specific)
+  if (inst === 'weak'   && lowCaution  && repCollapsed)            return 'deathSpiral';
+  if (inst === 'weak'   && lowCaution  && !repCollapsed)           return 'luckyWeak';
+  if (inst === 'weak'   && highCaution && profitable)              return 'reputationAsCapital';
+  if (inst === 'strong' && highCaution)                            return 'overInsurance';
+  if (inst === 'strong' && lowCaution  && state.lawsuits === 0)    return 'luckyBinary';
+  if (inst === 'strong' && lowCaution  && state.lawsuits >  0)     return 'formalLiability';
+
+  // Layer B — static behavior (adaptive already handled above)
+  if (cls.isStatic) return 'staticStrategy';
+
+  // Layer C — stated vs revealed preferences
+  if (cls.statedRevealedGap) return 'statedVsRevealed';
+
+  // Layer D — regime fit (always fires)
+  return cls.exAnteOptimal ? 'internalized' : 'wrongRegime';
 }
 
 // ── Screen renderers ───────────────────────────────────────────
@@ -265,7 +447,7 @@ function renderRoundScreen() {
 
   setText('round-num',  state.round);
   setText('inst-badge', cfg.name);
-  setText('stat-silver', state.silver);
+  setText('stat-silver', state.silver + ' ◆');
   setText('stat-rep',    state.reputation);
 
   const riskEl    = document.getElementById('stat-risk');
@@ -279,8 +461,9 @@ function renderRoundScreen() {
   document.getElementById('progress-fill').style.width =
     ((state.round - 1) / TOTAL_ROUNDS * 100) + '%';
 
-  // Restore or default the QA selection
+  // Restore or default the QA selection and refresh the pre-send summary
   selectOption('qa-selector', state.selectedQA || 'basic');
+  updatePreSendSummary();
 
   // Sparkline shows after at least one round
   const sparkWrap = document.getElementById('sparkline-wrap-round');
@@ -388,24 +571,20 @@ function renderDebriefScreen() {
   // Sparkline (no highlight)
   renderSparkline('sparkline-debrief', state.history.map(r => r.roundProfit), -1);
 
-  // Counterfactual
-  const cf   = computeCounterfactual();
-  const diff = cf.silver - state.silver;
-  const cfEl = document.getElementById('db-counterfactual');
-  let cfMessage;
-  if (diff > 10) {
-    cfMessage = `Basic QA would have earned you <strong>${diff} more silver</strong>. The higher upfront cost was more than offset by avoided refunds and reputation losses.`;
-  } else if (diff < -10) {
-    cfMessage = `Your choices earned you <strong>${Math.abs(diff)} more silver</strong> than Basic QA would have. You got away with it — but consider: was the variance worth the risk?`;
-  } else {
-    cfMessage = `Your choices and Basic QA produced nearly identical results (<strong>${diff >= 0 ? '+' : ''}${diff} silver</strong>). The QA level had similar expected value — but not necessarily similar risk.`;
-  }
-  cfEl.innerHTML =
-    `<p>With Basic QA every round, you would have ended with <strong>${cf.silver} ◆</strong> ` +
-    `(you ended with <strong>${state.silver} ◆</strong>).</p>` +
-    `<p>${cfMessage}</p>`;
+  const cls        = classifyRevealedStrategy();
+  const comparison = computeStrategyComparison();
+  const expected   = computeExpectedValue();
 
-  // Volatility
+  // ── Layer 1: Revealed strategy (descriptive) ──────────────
+  renderRevealedStrategy(cls);
+
+  // ── Layer 2: Strategy comparison table ────────────────────
+  renderStrategyComparison(comparison);
+
+  // ── Layer 3: Skill vs. luck ───────────────────────────────
+  renderSkillVsLuck(expected);
+
+  // ── Volatility (kept, tightened) ──────────────────────────
   const profits = state.history.map(r => r.roundProfit);
   const mean    = profits.reduce((a, b) => a + b, 0) / profits.length;
   const stdDev  = Math.sqrt(profits.reduce((a, b) => a + (b - mean) ** 2, 0) / profits.length);
@@ -414,84 +593,122 @@ function renderDebriefScreen() {
   const volDesc = stdDev < 15 ? 'low' : stdDev < 35 ? 'moderate' : 'high';
 
   document.getElementById('db-volatility').innerHTML =
-    `<p>Round profits ranged from <strong>${minP}</strong> to <strong>${maxP}</strong> ◆ ` +
-    `(std. deviation: ${Math.round(stdDev)}).</p>` +
-    `<p>This is <strong>${volDesc} volatility</strong>. ` +
-    { low:      'Your conservative choices produced consistent, predictable profits.',
-      moderate: 'Your profits varied meaningfully — some good rounds, some bad.',
-      high:     'Large swings indicate high tail risk. A single bad round can undo several good ones.' }[volDesc] +
-    `</p>`;
+    `<p>Round-to-round profits ranged from <strong>${minP}</strong> to <strong>${maxP}</strong> ◆ ` +
+    `(std. deviation: <strong>${Math.round(stdDev)}</strong>) — <strong>${volDesc} volatility</strong>.</p>` +
+    `<p>${ { low:      'A flat profile means your downside was contained, but you may have left expected value on the table by over-insuring.',
+             moderate: 'Some good rounds, some bad — typical of a strategy that takes calibrated risk.',
+             high:     'Large swings mean a single bad round can undo several good ones. Volatility is itself a cost when refunds and lawsuits stack.' }[volDesc] }</p>`;
 
-  // Personality consistency
+  // ── Personality (only if there is a real gap) ─────────────
   const persSection = document.getElementById('db-personality-section');
-  if (state.personalityType) {
+  if (state.personalityType && cls.statedRevealedGap) {
     persSection.classList.remove('hidden');
-    const qaCounts = { none: 0, basic: 0, strict: 0 };
-    state.history.forEach(r => qaCounts[r.qaKey]++);
-    const typeName = PERSONALITY_LABELS[state.personalityType];
-    let assessment;
-
-    if (state.personalityType === 'maximizer') {
-      const n = qaCounts.none;
-      assessment = n >= 6
-        ? `Consistent. You chose No QA in ${n}/10 rounds — staying true to short-term profit maximization.`
-        : n <= 2
-        ? `You identified as a Short-Term Maximizer but chose No QA only ${n} times. Your actual behavior was more cautious than your stated type.`
-        : `Mixed. You chose No QA ${n}/10 rounds — balancing profit with some risk awareness.`;
-    } else if (state.personalityType === 'builder') {
-      const n = qaCounts.basic + qaCounts.strict;
-      assessment = n >= 8
-        ? `Consistent. You invested in QA in ${n}/10 rounds — building your reputation steadily.`
-        : n <= 4
-        ? `You identified as a Reputation Builder but skipped QA in ${TOTAL_ROUNDS - n} rounds. Your choices didn't match your stated goal.`
-        : `Partially consistent. You chose higher QA in ${n}/10 rounds.`;
-    } else { // minimizer
-      const n = qaCounts.strict;
-      assessment = n >= 7
-        ? `Consistent. Strict QA in ${n}/10 rounds shows genuine, systematic risk aversion.`
-        : n <= 2
-        ? `You identified as a Risk Minimizer but chose Strict QA only ${n} times. Your choices carried more risk than your stated type.`
-        : `Mixed consistency. Strict QA in ${n}/10 rounds — some risk aversion, but not systematic.`;
-    }
-
+    const stated   = PERSONALITY_LABELS[state.personalityType];
+    const revealed = revealedLabel(cls.dominant);
     document.getElementById('db-personality').innerHTML =
-      `<p>You identified as a <strong>${typeName}</strong>.</p><p>${assessment}</p>`;
+      `<p>You identified as a <strong>${stated}</strong>, but your choices look more like a <strong>${revealed}</strong> ` +
+      `(${cls.counts.none} No QA, ${cls.counts.basic} Basic, ${cls.counts.strict} Strict). ` +
+      `That gap between stated and revealed preference is itself an economic insight — choices, not labels, are the data.</p>`;
+  } else if (state.personalityType) {
+    persSection.classList.remove('hidden');
+    const stated = PERSONALITY_LABELS[state.personalityType];
+    document.getElementById('db-personality').innerHTML =
+      `<p>You identified as a <strong>${stated}</strong>, and your choices were broadly consistent with that.</p>`;
   } else {
     persSection.classList.add('hidden');
   }
 
-  // Insights
-  const lines = [];
-
-  if (state.defectiveShipments >= 4 && state.institutions === 'weak') {
-    lines.push('In a weak-institution market, reputation erosion is self-reinforcing: each defect raises the cost of the next one. There is no legal backstop — your reputation <em>is</em> the enforcement mechanism.');
-  }
-  if (state.lawsuits >= 2 && state.institutions === 'strong') {
-    lines.push('In a strong-institution market, formal legal risk is the primary cost of corner-cutting — not reputation. Courts enforce contracts regardless of how you are perceived.');
-  }
-  if (state.reputation < 40) {
-    lines.push('Your reputation fell below the critical threshold (40), reducing your revenue per shipment. Reputation is productive capital, not just a score: it directly affects your cash flows.');
-  }
-  if (state.defectiveShipments === 0) {
-    lines.push('Zero defects: rigorous QA eliminated tail risk — but at a cost. Compare your outcome to the counterfactual: was the added insurance worth it?');
-  }
-  if (state.lawsuits === 0 && state.defectiveShipments >= 3 && state.institutions === 'strong') {
-    lines.push('You got defects but no lawsuits — you were lucky. Under strong institutions, the lawsuit probability per defect is real; a larger sample would likely include at least one.');
-  }
-
-  // Always include at least one structural insight
-  if (lines.length === 0) {
-    lines.push('QA is risk management: it reduces variance, not just expected cost. Strict QA does not just save money on average — it prevents catastrophic tail outcomes.');
-  }
-
-  lines.push(
-    state.institutions === 'weak'
-      ? 'Under weak institutions, reputation and formal contracts are <em>substitutes</em>. Where courts cannot enforce agreements, reputation networks do the job — but only if you protect them.'
-      : 'Under strong institutions, formal contracts substitute for reputation. Courts limit the damage from a bad deal — but they are expensive when invoked.'
-  );
+  // ── Layer 4: One targeted lesson ──────────────────────────
+  const key = selectKeyLesson(cls, comparison);
+  const lesson = LESSON_LIBRARY[key];
+  const filled = lesson.body
+    .replace('{stated}',      state.personalityType ? PERSONALITY_LABELS[state.personalityType] : '')
+    .replace('{revealed}',    revealedLabel(cls.dominant))
+    .replace('{institution}', cfg.name)
+    .replace('{dominant}',    cls.dominant === 'mixed' ? 'a mixed strategy' : QA_OPTIONS[cls.dominant].label);
 
   document.getElementById('db-insights').innerHTML =
-    lines.map(l => `<p style="margin-bottom:8px">• ${l}</p>`).join('');
+    `<h4 class="lesson-title">${lesson.title}</h4>` +
+    `<p>${filled}</p>` +
+    `<p class="lesson-coda"><em>${
+      state.institutions === 'weak'
+        ? 'Under weak institutions, reputation and formal contracts are substitutes. Where courts cannot enforce agreements, reputation networks do the job — if you protect them.'
+        : 'Under strong institutions, formal contracts substitute for reputation. Courts limit the damage from a bad deal — but they are expensive when invoked.'
+    }</em></p>`;
+}
+
+function renderRevealedStrategy(cls) {
+  const el = document.getElementById('db-revealed');
+  if (!el) return;
+  const dominantLabel = cls.dominant === 'mixed' ? 'mixed' : QA_OPTIONS[cls.dominant].label;
+  const adapt = cls.adaptive ? 'adaptive (raised QA after a defect)'
+              : cls.isStatic ? 'static (same choice every round)'
+              : 'varied (no clear adaptive pattern)';
+  el.innerHTML =
+    `<p>You played a <strong>${dominantLabel.toLowerCase()}</strong>, ${adapt} strategy. ` +
+    `Caution index: <strong>${cls.cautionIndex.toFixed(2)}</strong> on a 0–2 scale ` +
+    `(0 = always No QA, 2 = always Strict QA).</p>` +
+    `<p>QA mix: ${cls.counts.none} No QA · ${cls.counts.basic} Basic · ${cls.counts.strict} Strict.</p>`;
+}
+
+function renderStrategyComparison(c) {
+  const el = document.getElementById('db-strategy-table');
+  if (!el) return;
+
+  const rows = [
+    { key: 'none',   label: 'Pure No QA',     data: c.none },
+    { key: 'basic',  label: 'Pure Basic QA',  data: c.basic },
+    { key: 'strict', label: 'Pure Strict QA', data: c.strict },
+    { key: 'actual', label: 'Your choices',   data: c.actual },
+  ];
+  const bestSilver = Math.max(...rows.map(r => r.data.silver));
+  const exAnte     = EX_ANTE_OPTIMAL[state.institutions];
+
+  let html = '<table class="strategy-table"><thead><tr>' +
+             '<th>Strategy</th><th>Final silver</th><th>Final reputation</th>' +
+             '</tr></thead><tbody>';
+  for (const r of rows) {
+    const cls = [];
+    if (r.key === 'actual')                    cls.push('your-row');
+    if (r.data.silver === bestSilver)          cls.push('best-silver');
+    if (r.key === exAnte)                      cls.push('ex-ante-optimal');
+    html += `<tr class="${cls.join(' ')}">` +
+            `<td>${r.label}${r.key === exAnte ? ' <span class="badge">EV-best ex-ante</span>' : ''}</td>` +
+            `<td>${r.data.silver} ◆</td>` +
+            `<td>${r.data.reputation}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  html += `<p class="table-note">Same defect dice across all rows — only the QA decision changes. ` +
+          `“Best in this dice draw” is highlighted; the EV-best pure strategy for ${INSTITUTIONS[state.institutions].name} ` +
+          `is marked with a badge. The two are not always the same in any single run.</p>`;
+  el.innerHTML = html;
+}
+
+function renderSkillVsLuck(expected) {
+  const el = document.getElementById('db-skill-luck');
+  if (!el) return;
+  const luck = state.silver - expected;
+  const sign = luck >= 0 ? '+' : '';
+  let frame;
+  if (Math.abs(luck) < 15) {
+    frame = 'Your realized result tracked your strategy\'s expected value closely — this run was a fair sample.';
+  } else if (luck > 0) {
+    frame = `You finished <strong>${sign}${luck}</strong> silver above the expected value of your strategy. That gap is good luck on top of your choices, not skill on top of your choices. Don\'t over-update from a single run.`;
+  } else {
+    frame = `You finished <strong>${luck}</strong> silver below the expected value of your strategy. That gap is bad luck on top of your choices, not a verdict on the choices themselves. Replay the same strategy enough times and the average will move toward ${expected}.`;
+  }
+  el.innerHTML =
+    `<p>Your strategy had an expected value of <strong>${expected} ◆</strong>. ` +
+    `You finished at <strong>${state.silver} ◆</strong>.</p>` +
+    `<p>${frame}</p>`;
+}
+
+function revealedLabel(dominant) {
+  if (dominant === 'mixed')  return 'Mixed-Strategy player';
+  if (dominant === 'none')   return 'Short-Term Maximizer';
+  if (dominant === 'basic')  return 'Reputation Builder';
+  if (dominant === 'strict') return 'Risk Minimizer';
+  return 'player';
 }
 
 // ── Sparkline renderer ─────────────────────────────────────────
@@ -549,6 +766,25 @@ function selectOption(selectorId, value) {
   container.querySelectorAll('.option-card').forEach(card => {
     card.classList.toggle('selected', card.dataset.value === value);
   });
+}
+
+function selectQAOption(value) {
+  selectOption('qa-selector', value);
+  updatePreSendSummary();
+}
+
+function updatePreSendSummary() {
+  const selected = document.querySelector('#qa-selector .option-card.selected');
+  const qaKey = selected ? selected.dataset.value : 'basic';
+  const qa  = QA_OPTIONS[qaKey];
+  const rev = getExpectedRevenue();
+  const net = rev - qa.cost;
+
+  document.getElementById('pre-revenue').textContent = '+' + rev + ' ◆';
+  document.getElementById('pre-qa-cost').textContent = '−' + qa.cost + ' ◆';
+  const netEl = document.getElementById('pre-net');
+  netEl.textContent = (net >= 0 ? '+' : '') + net + ' ◆';
+  netEl.className   = net >= 0 ? 'positive' : 'negative';
 }
 
 function showScreen(id) {

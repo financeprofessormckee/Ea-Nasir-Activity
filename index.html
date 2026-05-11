@@ -4,9 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ea-Nasir: The Copper Merchant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/cob-brand.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- WT COB institutional masthead (shared) -->
+  <header class="cob-brand" role="banner">
+    <div class="cob-brand__inner">
+      <img class="cob-brand__seal" src="assets/cob-seal.png" alt="West Texas A&amp;M University · Paul and Virginia Engler College of Business seal">
+      <div class="cob-brand__wordmark">
+        <span class="cob-brand__university">West Texas A&amp;M University</span>
+        <span class="cob-brand__college">Paul and Virginia Engler College of Business</span>
+      </div>
+    </div>
+    <div class="cob-brand__rule"></div>
+  </header>
 
   <!-- ═══════════════════════════════════════════════════════
        SETUP SCREEN
@@ -107,22 +123,38 @@
       <h3>Quality Assurance Level</h3>
       <div class="qa-selector" id="qa-selector">
         <div class="option-card qa-card" data-value="none"
-             onclick="selectOption('qa-selector','none')">
+             onclick="selectQAOption('none')">
           <div class="qa-meta">Cost: 0 ◆ &nbsp;|&nbsp; 40% defect chance</div>
           <div class="option-title">No QA</div>
           <div class="option-body">Ship as-is. Fast and free.</div>
         </div>
         <div class="option-card qa-card selected" data-value="basic"
-             onclick="selectOption('qa-selector','basic')">
+             onclick="selectQAOption('basic')">
           <div class="qa-meta">Cost: 10 ◆ &nbsp;|&nbsp; 20% defect chance</div>
           <div class="option-title">Basic QA</div>
           <div class="option-body">Spot-check the ingots.</div>
         </div>
         <div class="option-card qa-card" data-value="strict"
-             onclick="selectOption('qa-selector','strict')">
+             onclick="selectQAOption('strict')">
           <div class="qa-meta">Cost: 25 ◆ &nbsp;|&nbsp; 5% defect chance</div>
           <div class="option-title">Strict QA</div>
           <div class="option-body">Full inspection. Peace of mind.</div>
+        </div>
+      </div>
+
+      <div id="pre-send-summary" class="pre-send-summary">
+        <div class="summary-row">
+          <span class="summary-label">Expected Revenue</span>
+          <span id="pre-revenue" class="positive">+100 ◆</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">QA Cost</span>
+          <span id="pre-qa-cost" class="negative">−10 ◆</span>
+        </div>
+        <hr class="summary-divider">
+        <div class="summary-row summary-net">
+          <span class="summary-label">Expected Net</span>
+          <span id="pre-net" class="positive">+90 ◆</span>
         </div>
       </div>
 
@@ -241,23 +273,33 @@
         <div class="sparkline" id="sparkline-debrief"></div>
       </div>
 
+      <div class="debrief-section">
+        <h3>Your revealed strategy</h3>
+        <div id="db-revealed"></div>
+      </div>
+
       <div class="debrief-section counterfactual-section">
-        <h3>What if you had always chosen Basic QA?</h3>
-        <div id="db-counterfactual"></div>
+        <h3>What if you had played a different strategy?</h3>
+        <div id="db-strategy-table"></div>
+      </div>
+
+      <div class="debrief-section skill-luck-section">
+        <h3>Skill vs. luck</h3>
+        <div id="db-skill-luck"></div>
       </div>
 
       <div class="debrief-section">
-        <h3>Profit Volatility</h3>
+        <h3>Profit volatility</h3>
         <div id="db-volatility"></div>
       </div>
 
       <div id="db-personality-section" class="debrief-section hidden">
-        <h3>Behavioral Consistency</h3>
+        <h3>Stated vs. revealed type</h3>
         <div id="db-personality"></div>
       </div>
 
       <div class="debrief-section insights-section">
-        <h3>Key Takeaways</h3>
+        <h3>Key lesson</h3>
         <div id="db-insights"></div>
       </div>
 
@@ -266,5 +308,8 @@
   </div>
 
   <script src="game.js"></script>
+  <footer class="bottombar">
+    <span>Quality Assurance in Ancient Mesopotamia — a teaching simulation. Made by Eric McKee.</span>
+  </footer>
 </body>
 </html>
