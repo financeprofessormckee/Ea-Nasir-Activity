@@ -1,5 +1,5 @@
 /* ============================================================
-   Ea-Nasir: The Copper Merchant — Game Logic
+   Cuneiform Capitalism: A Game of Risk and Reward — Game Logic
    ============================================================ */
 
 // ── Configuration ────────────────────────────────────────────
@@ -54,18 +54,70 @@ const TOTAL_ROUNDS   = 10;
 const STARTING_SILVER = 200;
 const STARTING_REP    = 70;
 
-const FLAVOR_TEXTS = [
-  "A temple contractor in the city of Nippur requires copper ingots for sacred vessels. The priests have high standards and long memories.",
-  "A wealthy merchant guild needs copper sheets for trade caravans heading south to the Gulf ports.",
-  "The palace administrator has placed an urgent order. They need copper fittings for the city gates — immediately.",
-  "A shipbuilder in the harbor district requires copper for new vessel fittings. He inspects every piece himself.",
-  "A bronze-smith of some renown has commissioned a large batch of ingots. He is known for turning away inferior work.",
-  "A group of traveling merchants offers a substantial contract. They have heard of you and are watching carefully.",
-  "A prominent temple is expanding and needs copper for statuary. The head priest is exacting and well-connected.",
-  "A new buyer approaches — referred by a past client. Your reputation has reached them before you have.",
-  "The city's chief administrator has commissioned copper writing instruments for the royal archive. Prestige work.",
-  "A grand merchant house places their final order of the season. They will remember how this partnership ends.",
-];
+const FLAVOR_TEXTS = {
+  weak: {
+    general: [
+      "A temple contractor in the city of Nippur requires copper ingots for sacred vessels. The priests have high standards and long memories.",
+      "A wealthy merchant guild needs copper sheets for trade caravans heading south to the Gulf ports.",
+      "The palace administrator has placed an urgent order. They need copper fittings for the city gates — immediately.",
+      "A shipbuilder in the harbor district requires copper for new vessel fittings. He inspects every piece himself.",
+      "A bronze-smith of some renown has commissioned a large batch of ingots. He is known for turning away inferior work.",
+      "A group of traveling merchants offers a substantial contract. They have heard of you and are watching carefully.",
+      "A prominent temple is expanding and needs copper for statuary. The head priest is exacting and well-connected.",
+      "A new buyer approaches — referred by a past client. Your reputation has reached them before you have.",
+      "The city's chief administrator has commissioned copper writing instruments for the royal archive. Prestige work.",
+      "A caravan master bound for Mari needs ingots to trade upriver. He returns this way every season and talks freely with other merchants on the road.",
+      "An Elamite envoy is procuring copper on behalf of his prince. Diplomatic gifts require pieces fit to be unwrapped before a foreign court.",
+      "A weapons-smith outfitting the city garrison needs ingots by the dozen. The captain of the guard inspects the finished blades himself.",
+      "A jeweler from the goldsmiths' quarter wants soft copper for fine inlay. Her clients are the wives of the city's wealthiest men.",
+      "A widow running her late husband's foundry places her first order under her own name. The other smiths are watching to see whom she'll favor.",
+      "A scribe-school administrator needs copper styluses for a new class of pupils. The school takes its supplies — and its complaints — straight to the palace.",
+      "A river-trader from Ur has come upstream with silver to spend. He buys in bulk, sells in distant ports, and answers to no one you know.",
+      "A coppersmith's guild representative wants ingots to distribute among the guild's apprentices. The guild's elders set prices city-wide.",
+      "A landowner is building an irrigation works and needs copper fittings for the sluice gates. The works will bear his name for generations.",
+      "A foreign caravan from Dilmun arrives unannounced, asking to buy what's on hand. They came a long way and may never come again — or may come every year.",
+      "A priest of Inanna commissions ingots for a votive offering. The piece will be displayed in the temple precinct where every visiting merchant will see it.",
+      "An aging master-smith is filling his last commission before retiring. His apprentices — your future buyers — are doing most of the inspecting.",
+      "A tax-farmer for the palace needs copper to settle accounts with a vassal town. Whatever you sell him will pass through many hands before it rests.",
+    ],
+    finale: [
+      "A grand merchant house places their final order of the season. They will remember how this partnership ends.",
+      "The harvest festival approaches, and a temple steward places the last great commission before the city turns to celebration. The accounting will be settled when the markets reopen.",
+      "A caravan is loading for the long winter route south — the last to leave before the rains. Whatever ingots go with it will be talked about all season at the far end.",
+    ],
+  },
+  strong: {
+    general: [
+      "A regional hospital system's procurement office needs a bulk order of your product. Their compliance team is strict and their institutional memory is long.",
+      "A national distributor wants units to resell into their regional retail channel. Their reorder volume depends on how this first shipment lands.",
+      "A government agency has placed a rush order with hard deadline penalties baked into the contract. They need it now — late delivery isn't an option.",
+      "A manufacturing client requires components for their production line. Their in-house QA team audits every shipment that comes through the dock.",
+      "A boutique premium brand has commissioned a large batch. They are publicly known for dropping suppliers whose output falls below spec.",
+      "An industry-analyst firm is running a vendor pilot with your company. They are watching the relationship carefully and writing it up.",
+      "A major university procurement office is expanding facilities and needs a large order. The head of procurement is exacting and well-connected in the industry.",
+      "An inbound lead arrives — referred by a past client. Your reputation has reached them before your sales team has.",
+      "A high-profile customer has commissioned a flagship contract with their logo on the line. Prestige work, highly visible.",
+      "An aerospace tier-1 supplier needs parts for a subassembly going onto a commercial airframe. Every lot is traceable; every nonconformance gets a report.",
+      "A discount big-box retailer wants a private-label run at thin margins and high volume. They drop suppliers quickly but talk to every other retailer about who they dropped and why.",
+      "A defense contractor places an order under a federal program. The audit trail will outlive everyone currently working on it.",
+      "An EV battery startup needs components for their pre-production line. They're loud on industry podcasts about which suppliers they love and which they don't.",
+      "A regional grocery chain wants units for in-store fixtures. Their facilities team swaps notes monthly with their counterparts at three competing chains.",
+      "A pharmaceutical packager needs components meeting FDA traceability requirements. One slipped lot triggers a recall — and a recall triggers a 483 letter.",
+      "A trade-show organizer is sourcing units for a flagship industry expo. Whatever you ship will be inspected by every competitor walking the floor.",
+      "A consumer-electronics brand on Amazon needs a fast pre-holiday run. Their product page reviews will mention build quality within two weeks of shipping.",
+      "A union purchasing co-op places an order on behalf of forty member shops. Their newsletter goes out every quarter and names names.",
+      "A green-energy installer wants components for a flagship municipal solar project. The ribbon-cutting will have the mayor and the local press in attendance.",
+      "A streaming-platform set designer needs units as on-camera props for a hit production. Whatever ships will be visible to millions of viewers.",
+      "A private-equity-owned roll-up of regional service shops places a centralized purchase. Procurement just consolidated; one contract now decides who supplies all 18 locations.",
+      "A B-corp specialty retailer wants units for their flagship store. Their customers post unboxing videos; their buyers screenshot defects to their group chat.",
+    ],
+    finale: [
+      "A major enterprise account places their end-of-fiscal-year renewal. They will remember how this partnership closes out the year.",
+      "Q4 closes next week and a strategic account is placing the order that will define your category review going into the new fiscal year. Their procurement team writes the supplier scorecard after the holidays.",
+      "A long-standing customer is consolidating vendors heading into next year's budget cycle. This shipment is the last data point before they decide who stays on the approved list.",
+    ],
+  },
+};
 
 const PERSONALITY_LABELS = {
   maximizer: "Short-Term Maximizer",
@@ -83,6 +135,13 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Map a uniform [0,1) roll onto an inclusive integer range using the same
+// scheme as randInt. Lets us pre-draw every roll the world hands the seller,
+// store it on the round record, and replay any counterfactual deterministically.
+function mapRoll(roll, [lo, hi]) {
+  return Math.floor(roll * (hi - lo + 1)) + lo;
+}
+
 function getRepTier(rep) {
   if (rep > 80) return 'high';
   if (rep >= 40) return 'medium';
@@ -91,6 +150,22 @@ function getRepTier(rep) {
 
 function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
+}
+
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function drawCustomerOrder(variant) {
+  const pool = FLAVOR_TEXTS[variant];
+  const general = shuffled(pool.general).slice(0, TOTAL_ROUNDS - 1);
+  const finale = pool.finale[Math.floor(Math.random() * pool.finale.length)];
+  return general.concat([finale]);
 }
 
 function getExpectedRevenue() {
@@ -115,6 +190,7 @@ function startGame() {
     personalityType:     persEl ? persEl.dataset.value : null,
     selectedQA:          'basic',
   };
+  state.customerOrder = drawCustomerOrder(state.institutions);
 
   renderRoundScreen();
   showScreen('screen-round');
@@ -161,9 +237,15 @@ function resolveRound(qaKey) {
   const revenue        = repTier === 'low' ? cfg.revenueLowRep : cfg.revenueBase;
   const revenuePenalty = cfg.revenueBase - revenue;
 
-  // The defect roll is stored so the counterfactual can replay with same luck
-  const defectRoll  = Math.random();
-  const isDefective = defectRoll < qa.defectProb;
+  // Pre-draw every roll the world hands the seller this round so any
+  // counterfactual ("what if I'd picked a different QA?") replays the
+  // same supply shocks deterministically. Some rolls go unused on rounds
+  // without a defect, but they're still "draws of the world."
+  const defectRoll        = Math.random();
+  const refundRoll        = Math.random();
+  const lawsuitOccursRoll = Math.random();
+  const lawsuitCostRoll   = Math.random();
+  const isDefective       = defectRoll < qa.defectProb;
 
   let refund      = 0;
   let repChange   = 0;
@@ -172,16 +254,16 @@ function resolveRound(qaKey) {
 
   if (isDefective) {
     // Refund to buyer
-    refund = randInt(cfg.refundRange[0], cfg.refundRange[1]);
+    refund = mapRoll(refundRoll, cfg.refundRange);
 
     // Reputation drop: base × institution speed × complaint multiplier for current tier
     const mult = cfg.complaintMult[repTier];
     repChange = -Math.round(cfg.repDropBase * cfg.repSpeedMult * mult);
 
     // Lawsuit check
-    if (Math.random() < cfg.lawsuitProb[repTier]) {
+    if (lawsuitOccursRoll < cfg.lawsuitProb[repTier]) {
       lawsuitFiled = true;
-      lawsuitCost  = randInt(cfg.lawsuitCostRange[0], cfg.lawsuitCostRange[1]);
+      lawsuitCost  = mapRoll(lawsuitCostRoll, cfg.lawsuitCostRange);
       state.lawsuits++;
     }
 
@@ -203,7 +285,10 @@ function resolveRound(qaKey) {
   const record = {
     round:          state.round,
     qaKey,
-    defectRoll,     // stored for counterfactual replay
+    defectRoll,        // stored for counterfactual replay
+    refundRoll,        // realized refund-amount draw (used if defective)
+    lawsuitOccursRoll, // realized lawsuit-trigger draw (used if defective)
+    lawsuitCostRoll,   // realized lawsuit-cost draw (used if lawsuit fires)
     isDefective,
     revenue,
     revenuePenalty,
@@ -226,16 +311,14 @@ function resolveRound(qaKey) {
 // ── Counterfactual replay ──────────────────────────────────────
 
 /*
-  Replay the full game substituting a fixed QA choice at every round.
-  Uses the same defect rolls captured in state.history (same luck).
-  Refund and lawsuit costs use the midpoint of their ranges so each
-  pure strategy is evaluated on its expected loss, not on fresh dice.
+  Replays the game using the same realized supply shocks (defect / refund /
+  lawsuit rolls) the student actually faced, varying only the QA decision.
+  Every row in the strategy-comparison table is a literal "what would have
+  happened in this exact world" — not an expected value.
 */
 function replayWithFixedQA(qaKey) {
-  const cfg     = INSTITUTIONS[state.institutions];
-  const qa      = QA_OPTIONS[qaKey];
-  const refund  = Math.round((cfg.refundRange[0] + cfg.refundRange[1]) / 2);
-  const lawsuit = Math.round((cfg.lawsuitCostRange[0] + cfg.lawsuitCostRange[1]) / 2);
+  const cfg = INSTITUTIONS[state.institutions];
+  const qa  = QA_OPTIONS[qaKey];
 
   let silver = STARTING_SILVER;
   let rep    = STARTING_REP;
@@ -249,8 +332,10 @@ function replayWithFixedQA(qaKey) {
     let loss      = 0;
 
     if (defective) {
-      // expected loss: refund + P(lawsuit) * lawsuit-cost
-      loss = refund + cfg.lawsuitProb[tier] * lawsuit;
+      const refund      = mapRoll(rec.refundRoll, cfg.refundRange);
+      const lawsuitHits = rec.lawsuitOccursRoll < cfg.lawsuitProb[tier];
+      const lawsuitCost = lawsuitHits ? mapRoll(rec.lawsuitCostRoll, cfg.lawsuitCostRange) : 0;
+      loss = refund + lawsuitCost;
       const mult = cfg.complaintMult[tier];
       repChange = -Math.round(cfg.repDropBase * cfg.repSpeedMult * mult);
     } else {
@@ -456,7 +541,7 @@ function renderRoundScreen() {
   riskEl.textContent = riskLabel[repTier];
   riskEl.className   = 'stat-value risk-badge risk-' + { high: 'low', medium: 'medium', low: 'high' }[repTier];
 
-  setText('flavor-text', FLAVOR_TEXTS[state.round - 1]);
+  setText('flavor-text', state.customerOrder[state.round - 1]);
 
   document.getElementById('progress-fill').style.width =
     ((state.round - 1) / TOTAL_ROUNDS * 100) + '%';
@@ -656,10 +741,10 @@ function renderStrategyComparison(c) {
   if (!el) return;
 
   const rows = [
-    { key: 'none',   label: 'Pure No QA',     data: c.none },
-    { key: 'basic',  label: 'Pure Basic QA',  data: c.basic },
-    { key: 'strict', label: 'Pure Strict QA', data: c.strict },
-    { key: 'actual', label: 'Your choices',   data: c.actual },
+    { key: 'none',   label: 'Skip QA every round',   data: c.none },
+    { key: 'basic',  label: 'Basic QA every round',  data: c.basic },
+    { key: 'strict', label: 'Strict QA every round', data: c.strict },
+    { key: 'actual', label: 'Your actual choices',   data: c.actual },
   ];
   const bestSilver = Math.max(...rows.map(r => r.data.silver));
   const exAnte     = EX_ANTE_OPTIMAL[state.institutions];
@@ -673,14 +758,15 @@ function renderStrategyComparison(c) {
     if (r.data.silver === bestSilver)          cls.push('best-silver');
     if (r.key === exAnte)                      cls.push('ex-ante-optimal');
     html += `<tr class="${cls.join(' ')}">` +
-            `<td>${r.label}${r.key === exAnte ? ' <span class="badge">EV-best ex-ante</span>' : ''}</td>` +
+            `<td>${r.label}${r.key === exAnte ? ' <span class="badge">Best on average</span>' : ''}</td>` +
             `<td>${r.data.silver} ◆</td>` +
             `<td>${r.data.reputation}</td></tr>`;
   }
   html += '</tbody></table>';
-  html += `<p class="table-note">Same defect dice across all rows — only the QA decision changes. ` +
-          `“Best in this dice draw” is highlighted; the EV-best pure strategy for ${INSTITUTIONS[state.institutions].name} ` +
-          `is marked with a badge. The two are not always the same in any single run.</p>`;
+  html += `<p class="table-note">Every row uses the same shipments, the same defects, and the same buyer reactions you actually faced — only your QA choice changes. ` +
+          `The <strong>highlighted</strong> row is the strategy that would have done best <em>in this run</em>. ` +
+          `The <strong>Best on average</strong> badge marks the strategy with the highest expected profit before you knew how the year would play out. ` +
+          `These two are often different — that's the point.</p>`;
   el.innerHTML = html;
 }
 
@@ -709,6 +795,87 @@ function revealedLabel(dominant) {
   if (dominant === 'basic')  return 'Reputation Builder';
   if (dominant === 'strict') return 'Risk Minimizer';
   return 'player';
+}
+
+const STRATEGY_LABEL = {
+  none:   'Pure No QA',
+  basic:  'Pure Basic QA',
+  strict: 'Pure Strict QA',
+  mixed:  'Mixed strategy',
+};
+
+function buildSummaryText() {
+  const cfg        = INSTITUTIONS[state.institutions];
+  const cls        = classifyRevealedStrategy();
+  const comparison = computeStrategyComparison();
+  const expected   = computeExpectedValue();
+  const lessonKey  = selectKeyLesson(cls, comparison);
+  const lessonTitle = LESSON_LIBRARY[lessonKey].title;
+
+  let revealedStrategy = STRATEGY_LABEL[cls.dominant] || 'Mixed strategy';
+  if (cls.dominant !== 'mixed') {
+    revealedStrategy += cls.exAnteOptimal
+      ? ' (EV-best ex-ante)'
+      : ' (dominated in this regime)';
+  }
+
+  const lines = [
+    'EA-NASIR SIMULATION RUN',
+    'Market: ' + cfg.name,
+  ];
+  if (state.personalityType) {
+    lines.push('Stated Philosophy: ' + PERSONALITY_LABELS[state.personalityType]);
+  }
+  lines.push('Revealed Strategy: ' + revealedStrategy);
+  lines.push('');
+  lines.push('-- FINAL LEDGER --');
+  lines.push('Final Silver: ' + state.silver);
+  lines.push('Final Reputation: ' + state.reputation);
+  lines.push('Defective Shipments: ' + state.defectiveShipments + ' / ' + TOTAL_ROUNDS);
+  lines.push('Lawsuits Filed: ' + state.lawsuits);
+  lines.push('');
+  lines.push('Skill vs. Luck: You finished at ' + state.silver + ' (Expected Value was ' + expected + ').');
+  lines.push('Key Lesson Triggered: "' + lessonTitle + '"');
+
+  return lines.join('\n');
+}
+
+function copySummary() {
+  const text = buildSummaryText();
+  const btn  = document.getElementById('btn-copy-summary');
+  const originalLabel = btn ? btn.textContent : 'Copy Summary';
+
+  const flash = (label) => {
+    if (!btn) return;
+    btn.textContent = label;
+    setTimeout(() => { btn.textContent = originalLabel; }, 1500);
+  };
+
+  const fallback = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity  = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      flash(ok ? 'Copied!' : 'Copy failed');
+    } catch (e) {
+      flash('Copy failed');
+    }
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => flash('Copied!'),
+      () => fallback()
+    );
+  } else {
+    fallback();
+  }
 }
 
 // ── Sparkline renderer ─────────────────────────────────────────
