@@ -1,8 +1,8 @@
-# Ea-Nasir: The Copper Merchant
+# Cuneiform Capitalism
 
 [![Play the Game](https://img.shields.io/badge/Play-Live_Game-blue?style=for-the-badge)](https://financeprofessormckee.github.io/Ea-Nasir-Activity/)
 
-**Ea-Nasir: The Copper Merchant** is an interactive trading game designed as a teaching tool to explore risk and reward tradeoffs, business ethics, and the economic impact of institutions. 
+**Cuneiform Capitalism** is an interactive trading game designed as a teaching tool to explore risk and reward tradeoffs, business ethics, and the economic impact of institutions. 
 
 ## About the Game
 You are a copper merchant. Over 10 trading rounds, you will ship copper ingots to buyers and decide how carefully to inspect each shipment. Defective copper means refunds, reputation damage — and sometimes worse. 
@@ -10,7 +10,7 @@ You are a copper merchant. Over 10 trading rounds, you will ship copper ingots t
 Students and players are forced to answer a fundamental business question: *Will short-term corner-cutting actually pay off?*
 
 ### Historical Context: Who was Ea-Nasir?
-This simulation is named after a real historical figure. **Ea-Nasir** was a copper merchant in ancient Mesopotamia (circa 1750 BC) who is infamous for receiving the [oldest known written customer complaint](https://en.wikipedia.org/wiki/Complaint_tablet_to_Ea-nasir). The complaint was preserved on a clay tablet by a deeply unsatisfied buyer named Nanni, who was furious over receiving sub-standard copper ingots and poor customer service. 
+This simulation is inspired after a real historical figure. **Ea-Nasir** was a copper merchant in ancient Mesopotamia (circa 1750 BC) who is infamous for receiving the [oldest known written customer complaint](https://en.wikipedia.org/wiki/Complaint_tablet_to_Ea-nasir). The complaint was preserved on a clay tablet by a deeply unsatisfied buyer named Nanni, who was furious over receiving sub-standard copper ingots and poor customer service. 
 
 **Teaching Tip:** Sharing this historical anecdote (and the Wikipedia link) with students serves as a highly engaging icebreaker before they play. It demonstrates that the core business concepts of quality control, supply chain management, and reputational risk have existed for nearly 4,000 years.
 
@@ -52,7 +52,7 @@ Ready to test your skills in the copper trade?
 
 The source code for this web application is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute the software.
 
-The pedagogical framing, narrative text, and specific simulation parameters (The "Ea-Nasir" scenario) are the intellectual property of Eric McKee. If you use or adapt this simulation for your own courses, please cite this repository.
+The pedagogical framing, narrative text, and specific simulation parameters (The "Cuneiform Capitalism" scenario) are the intellectual property of Eric McKee. If you use or adapt this simulation for your own courses, please cite this repository.
 
 ---
 *Created by [Eric McKee](https://github.com/financeprofessormckee).*
