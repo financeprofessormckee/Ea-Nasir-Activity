@@ -125,6 +125,20 @@ const PERSONALITY_LABELS = {
   minimizer: "Risk Minimizer",
 };
 
+// ── Analytics ─────────────────────────────────────────────────
+
+// Fire an anonymous, aggregate GoatCounter event. Never throws — analytics must
+// not break the game, and it silently no-ops if the script is blocked/absent.
+function trackEvent(path, title) {
+  try {
+    if (window.goatcounter && typeof window.goatcounter.count === 'function') {
+      window.goatcounter.count({ path, title, event: true });
+    }
+  } catch (e) {
+    /* analytics must never break the game */
+  }
+}
+
 // ── State ─────────────────────────────────────────────────────
 
 let state = {};
@@ -192,6 +206,9 @@ function startGame() {
   };
   state.customerOrder = drawCustomerOrder(state.institutions);
 
+  trackEvent('start-' + state.institutions,
+    'Game started (' + INSTITUTIONS[state.institutions].name + ')');
+
   renderRoundScreen();
   showScreen('screen-round');
 }
@@ -208,6 +225,7 @@ function sendShipment() {
 
 function nextRound() {
   if (state.round >= TOTAL_ROUNDS) {
+    trackEvent('complete', 'Reached final ledger');
     renderDebriefScreen();
     showScreen('screen-debrief');
   } else {
@@ -223,6 +241,7 @@ function resetGame() {
     .forEach(c => c.classList.remove('selected'));
   // Reset institution to default
   selectOption('institution-selector', 'weak');
+  trackEvent('play-again', 'Restarted the game');
   showScreen('screen-setup');
 }
 
@@ -841,6 +860,7 @@ function buildSummaryText() {
 }
 
 function copySummary() {
+  trackEvent('copy-summary', 'Copied results summary');
   const text = buildSummaryText();
   const btn  = document.getElementById('btn-copy-summary');
   const originalLabel = btn ? btn.textContent : 'Copy Summary';
