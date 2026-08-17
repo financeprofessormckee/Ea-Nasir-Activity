@@ -492,7 +492,7 @@ const LESSON_LIBRARY = {
   },
   bayesian: {
     title: 'Bayesian updating in practice',
-    body:  'You raised your QA after observing a defect — exactly what a rational agent does when new information arrives. Whether or not the realized outcome was favorable, the <em>policy</em> of conditioning future choices on observed signals is the right one. Most students in this game play a fixed rule for ten rounds.',
+    body:  'You raised your QA after observing a defect — exactly what a rational agent does when new information arrives. Whether or not the realized outcome was favorable, the <em>policy</em> of conditioning future choices on observed signals is the right one. Most students in this game play a fixed rule for ten rounds. In this game the true defect rate for each QA tier is fixed and known to you. In the real world it isn\'t. A defective shipment is itself a signal that the underlying risk may be higher than you assumed, so a rational seller updates two things after a bad shipment: the QA level going forward, and their estimate of the true defect probability itself.',
   },
   staticStrategy: {
     title: 'A strategy without state-dependence',
@@ -594,7 +594,7 @@ function renderOutcomeScreen(rec) {
     titleEl.textContent = 'Defective Shipment!';
     subEl.textContent   = rec.lawsuitFiled
       ? 'The buyer is furious. They are taking you to court.'
-      : 'The buyer demands a full refund. Word will spread.';
+      : 'The buyer demands a partial refund. Word will spread.';
   } else {
     banner.className  = 'outcome-banner outcome-good';
     iconEl.textContent  = '✓';
@@ -776,16 +776,20 @@ function renderStrategyComparison(c) {
     if (r.key === 'actual')                    cls.push('your-row');
     if (r.data.silver === bestSilver)          cls.push('best-silver');
     if (r.key === exAnte)                      cls.push('ex-ante-optimal');
+    const badges = [];
+    if (r.data.silver === bestSilver) badges.push('<span class="badge badge-run">Best in this run</span>');
+    if (r.key === exAnte)             badges.push('<span class="badge badge-ev">EV-optimal (fixed)</span>');
     html += `<tr class="${cls.join(' ')}">` +
-            `<td>${r.label}${r.key === exAnte ? ' <span class="badge">Best on average</span>' : ''}</td>` +
+            `<td>${r.label}${badges.length ? ' ' + badges.join(' ') : ''}</td>` +
             `<td>${r.data.silver} ◆</td>` +
             `<td>${r.data.reputation}</td></tr>`;
   }
   html += '</tbody></table>';
-  html += `<p class="table-note">Every row uses the same shipments, the same defects, and the same buyer reactions you actually faced — only your QA choice changes. ` +
-          `The <strong>highlighted</strong> row is the strategy that would have done best <em>in this run</em>. ` +
-          `The <strong>Best on average</strong> badge marks the strategy with the highest expected profit before you knew how the year would play out. ` +
-          `These two are often different — that's the point.</p>`;
+  html += `<p class="table-note">Every row uses the same shipments, the same defects, and the same buyer reactions you actually faced. Only your QA choice changes. ` +
+          `Two different "best" tags can appear above, and they answer different questions. ` +
+          `<strong>Best in this run</strong> is which QA choice would have scored highest against the exact shipments and buyer reactions you actually drew. ` +
+          `<strong>EV-optimal (fixed)</strong> is which choice wins on average across many runs, decided before any dice were rolled. ` +
+          `They often disagree. That's the luck-vs-skill point of this whole table.</p>`;
   el.innerHTML = html;
 }
 
@@ -905,15 +909,23 @@ function renderSparkline(containerId, profits, highlightIndex) {
   if (!container) return;
   container.innerHTML = '';
 
+  // Expose the same data non-visually so meaning isn't carried by colour
+  // alone (WCAG 1.4.1 / 1.1.1).
+  container.setAttribute('role', 'img');
   if (profits.length === 0) {
+    container.setAttribute('aria-label', 'Profit history: no rounds played yet.');
     // Show placeholder bars while no history yet
     for (let i = 0; i < TOTAL_ROUNDS; i++) {
       const bar = document.createElement('div');
       bar.className = 'spark-placeholder';
+      bar.setAttribute('aria-hidden', 'true');
       container.appendChild(bar);
     }
     return;
   }
+
+  container.setAttribute('aria-label', 'Profit by round — ' +
+    profits.map((p, i) => 'round ' + (i + 1) + ' ' + (p >= 0 ? '+' : '') + p + ' silver').join(', ') + '.');
 
   const maxAbs      = Math.max(...profits.map(Math.abs), 1);
   const maxBarHeight = 48; // px
@@ -951,9 +963,80 @@ function selectOption(selectorId, value) {
   const container = document.getElementById(selectorId);
   if (!container) return;
   container.querySelectorAll('.option-card').forEach(card => {
-    card.classList.toggle('selected', card.dataset.value === value);
+    const isSelected = card.dataset.value === value;
+    card.classList.toggle('selected', isSelected);
+    // Keep the ARIA radio state and roving tabindex in sync (WCAG 4.1.2)
+    if (card.getAttribute('role') === 'radio') {
+      card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+      card.tabIndex = isSelected ? 0 : -1;
+    }
   });
 }
+
+// Keyboard operability for the div-based radio groups (WCAG 2.1.1).
+// Enter/Space selects the focused card (reusing its onclick); arrows move
+// focus within the group and select the newly focused card.
+function initOptionCards() {
+  document.querySelectorAll('[role="radiogroup"]').forEach(group => {
+    const cards = Array.from(group.querySelectorAll('.option-card'));
+    group.addEventListener('keydown', e => {
+      const current = document.activeElement;
+      const idx = cards.indexOf(current);
+      if (idx === -1) return;
+
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        current.click();
+        return;
+      }
+
+      let nextIdx = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextIdx = (idx + 1) % cards.length;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') nextIdx = (idx - 1 + cards.length) % cards.length;
+      if (nextIdx === null) return;
+
+      e.preventDefault();
+      const next = cards[nextIdx];
+      next.focus();
+      next.click();   // arrow-navigating a radio group also selects
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initOptionCards);
+
+// ── Reputation info disclosure ─────────────────────────────────
+
+function toggleRepInfo() {
+  const btn   = document.getElementById('rep-info-btn');
+  const panel = document.getElementById('rep-info-panel');
+  if (!btn || !panel) return;
+  const isOpen = !panel.classList.contains('hidden');
+  if (isOpen) closeRepInfo();
+  else {
+    panel.classList.remove('hidden');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+}
+
+function closeRepInfo() {
+  const btn   = document.getElementById('rep-info-btn');
+  const panel = document.getElementById('rep-info-panel');
+  if (!btn || !panel) return;
+  panel.classList.add('hidden');
+  btn.setAttribute('aria-expanded', 'false');
+}
+
+document.addEventListener('click', e => {
+  const btn   = document.getElementById('rep-info-btn');
+  const panel = document.getElementById('rep-info-panel');
+  if (!btn || !panel || panel.classList.contains('hidden')) return;
+  if (!panel.contains(e.target) && e.target !== btn) closeRepInfo();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeRepInfo();
+});
 
 function selectQAOption(value) {
   selectOption('qa-selector', value);
@@ -977,6 +1060,13 @@ function updatePreSendSummary() {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const target = document.getElementById(id);
-  if (target) target.classList.add('active');
+  if (target) {
+    target.classList.add('active');
+    // Move focus into the newly shown screen so keyboard and screen-reader
+    // users follow the view change instead of being stranded on a now-hidden
+    // control (WCAG 2.4.3 Focus Order).
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+  }
   window.scrollTo(0, 0);
 }

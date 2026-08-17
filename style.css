@@ -6,9 +6,9 @@
   --bg:          #e8d9bf;
   --card-bg:     #fdf6e8;
   --text:        #3d2b1f;
-  --muted:       #8b7355;
-  --accent:      #b5722c;
-  --accent-h:    #9a5e1f;
+  --muted:       #6f5a40;   /* darkened from #8b7355 for >=4.5:1 text contrast (WCAG 1.4.3) */
+  --accent:      #9a5e1f;   /* darkened from #b5722c so #fff on accent >=4.5:1 (WCAG 1.4.3) */
+  --accent-h:    #7f4a15;   /* darker hover, keeps >=4.5:1 white and >=3:1 focus ring */
   --success:     #2d6a4f;
   --danger:      #b91c1c;
   --warning:     #d97706;
@@ -18,6 +18,31 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Skip link (visually hidden until focused) — WCAG 2.4.1 ── */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 1000;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: var(--r);
+  font-weight: 700;
+  text-decoration: none;
+  transition: top .14s;
+}
+.skip-link:focus { top: 8px; }
+
+/* ── Visible keyboard focus — WCAG 2.4.7 ── */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.option-card:focus-visible,
+.skip-link:focus-visible {
+  outline: 3px solid var(--accent-h);
+  outline-offset: 2px;
+}
 
 body {
   background: var(--bg);
@@ -115,7 +140,7 @@ p {
 /* ── Option cards ────────────────────────────────────────── */
 
 .option-card {
-  border: 2px solid var(--border);
+  border: 2px solid #9e7e44;   /* >=3:1 vs card for non-text control boundary (WCAG 1.4.11) */
   border-radius: var(--r);
   padding: 12px 14px;
   cursor: pointer;
@@ -146,7 +171,7 @@ p {
 
 .qa-meta {
   font-size: .72rem;
-  color: var(--warning);
+  color: #8a4e13;   /* darkened amber for >=4.5:1 text contrast (WCAG 1.4.3) */
   margin-bottom: 5px;
 }
 
@@ -304,6 +329,55 @@ p {
 }
 
 .stat-value { font-size: 1.2rem; font-weight: 700; }
+
+.stat-box-rep { position: relative; }
+
+.info-btn {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  padding: 0;
+  margin-left: 2px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--muted);
+  font-size: .7rem;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.info-btn:hover,
+.info-btn:focus-visible {
+  background: var(--accent, #b45309);
+  color: #fff;
+  outline: 2px solid var(--accent, #b45309);
+  outline-offset: 1px;
+}
+
+.info-panel {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  background: #fffdf8;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: normal;
+}
+.info-panel p {
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0 0 6px;
+}
+.info-panel p:last-child { margin-bottom: 0; }
+.info-panel.hidden { display: none; }
 
 /* Risk badge colours */
 .risk-badge { display: inline-block; border-radius: 5px; padding: 1px 7px; }
@@ -610,6 +684,12 @@ p {
   border-radius: 999px;
   margin-left: 4px;
   vertical-align: middle;
+}
+.strategy-table .badge-run {
+  background: var(--success, #1e40af);
+}
+.strategy-table .badge-ev {
+  background: #7c3aed;
 }
 .table-note {
   font-size: 0.85rem;

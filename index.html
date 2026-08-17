@@ -16,6 +16,8 @@
 </head>
 <body>
 
+  <a href="#main" class="skip-link">Skip to main content</a>
+
   <!-- WT COB institutional masthead (shared) -->
   <header class="cob-brand" role="banner">
     <div class="cob-brand__inner">
@@ -28,13 +30,15 @@
     <div class="cob-brand__rule"></div>
   </header>
 
+  <main id="main">
+
   <!-- ═══════════════════════════════════════════════════════
        SETUP SCREEN
   ════════════════════════════════════════════════════════ -->
   <div id="screen-setup" class="screen active">
     <div class="card">
       <div class="logo-area">
-        <div class="logo-glyph">𒀭</div>
+        <div class="logo-glyph" aria-hidden="true">𒀭</div>
         <h1>Cuneiform Capitalism</h1>
         <p class="subtitle">A Game of Risk and Reward</p>
       </div>
@@ -49,17 +53,21 @@
 
       <section class="setup-section">
         <h3>Choose Your Market</h3>
-        <div class="two-col" id="institution-selector">
+        <div class="two-col" id="institution-selector" role="radiogroup" aria-label="Choose your market">
           <div class="option-card selected" data-value="weak"
+               role="radio" aria-checked="true" tabindex="0"
+               aria-label="Ancient Bazaar. Weak institutions. Your reputation is your only contract — word of bad copper spreads fast."
                onclick="selectOption('institution-selector','weak')">
-            <div class="option-icon">🏺</div>
+            <div class="option-icon" aria-hidden="true">🏺</div>
             <div class="option-title">Ancient Bazaar</div>
             <div class="option-body">Weak institutions. Your reputation is your only
               contract — word of bad copper spreads fast.</div>
           </div>
           <div class="option-card" data-value="strong"
+               role="radio" aria-checked="false" tabindex="-1"
+               aria-label="Modern Corporate. Strong institutions. Courts enforce contracts, but legal violations are very costly."
                onclick="selectOption('institution-selector','strong')">
-            <div class="option-icon">🏛️</div>
+            <div class="option-icon" aria-hidden="true">🏛️</div>
             <div class="option-title">Modern Corporate</div>
             <div class="option-body">Strong institutions. Courts enforce contracts,
               but legal violations are very costly.</div>
@@ -69,18 +77,24 @@
 
       <section class="setup-section">
         <h3>Your Trading Philosophy <span class="label-optional">optional</span></h3>
-        <div class="three-col" id="personality-selector">
+        <div class="three-col" id="personality-selector" role="radiogroup" aria-label="Your trading philosophy (optional)">
           <div class="option-card" data-value="maximizer"
+               role="radio" aria-checked="false" tabindex="0"
+               aria-label="Short-Term Maximizer. Profit now, worry later."
                onclick="selectOption('personality-selector','maximizer')">
             <div class="option-title">Short-Term Maximizer</div>
             <div class="option-body">Profit now, worry later</div>
           </div>
           <div class="option-card" data-value="builder"
+               role="radio" aria-checked="false" tabindex="-1"
+               aria-label="Reputation Builder. Play the long game."
                onclick="selectOption('personality-selector','builder')">
             <div class="option-title">Reputation Builder</div>
             <div class="option-body">Play the long game</div>
           </div>
           <div class="option-card" data-value="minimizer"
+               role="radio" aria-checked="false" tabindex="-1"
+               aria-label="Risk Minimizer. Avoid catastrophic losses."
                onclick="selectOption('personality-selector','minimizer')">
             <div class="option-title">Risk Minimizer</div>
             <div class="option-body">Avoid catastrophic losses</div>
@@ -110,9 +124,20 @@
           <div class="stat-label">Silver</div>
           <div class="stat-value" id="stat-silver">200</div>
         </div>
-        <div class="stat-box">
-          <div class="stat-label">Reputation</div>
+        <div class="stat-box stat-box-rep">
+          <div class="stat-label">
+            Reputation
+            <button type="button" class="info-btn" id="rep-info-btn"
+                    aria-expanded="false" aria-controls="rep-info-panel"
+                    aria-label="What does reputation do?"
+                    onclick="toggleRepInfo()">ⓘ</button>
+          </div>
           <div class="stat-value" id="stat-rep">70</div>
+          <div class="info-panel hidden" id="rep-info-panel" role="note">
+            <p><strong>Above 80 (High):</strong> Full revenue. Lower lawsuit risk. Defects barely dent your reputation.</p>
+            <p><strong>40 to 80 (Medium):</strong> Full revenue. Moderate lawsuit risk and complaint impact.</p>
+            <p><strong>Below 40 (Low):</strong> Revenue is cut. Lawsuit risk is highest, and each defect erodes reputation fastest. This is the death-spiral zone.</p>
+          </div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Legal Risk</div>
@@ -125,20 +150,26 @@
       </div>
 
       <h3>Quality Assurance Level</h3>
-      <div class="qa-selector" id="qa-selector">
+      <div class="qa-selector" id="qa-selector" role="radiogroup" aria-label="Quality assurance level">
         <div class="option-card qa-card" data-value="none"
+             role="radio" aria-checked="false" tabindex="-1"
+             aria-label="No QA. Cost: 0 silver, 40% defect chance. Ship as-is. Fast and free."
              onclick="selectQAOption('none')">
           <div class="qa-meta">Cost: 0 ◆ &nbsp;|&nbsp; 40% defect chance</div>
           <div class="option-title">No QA</div>
           <div class="option-body">Ship as-is. Fast and free.</div>
         </div>
         <div class="option-card qa-card selected" data-value="basic"
+             role="radio" aria-checked="true" tabindex="0"
+             aria-label="Basic QA. Cost: 10 silver, 20% defect chance. Spot-check the ingots."
              onclick="selectQAOption('basic')">
           <div class="qa-meta">Cost: 10 ◆ &nbsp;|&nbsp; 20% defect chance</div>
           <div class="option-title">Basic QA</div>
           <div class="option-body">Spot-check the ingots.</div>
         </div>
         <div class="option-card qa-card" data-value="strict"
+             role="radio" aria-checked="false" tabindex="-1"
+             aria-label="Strict QA. Cost: 25 silver, 5% defect chance. Full inspection. Peace of mind."
              onclick="selectQAOption('strict')">
           <div class="qa-meta">Cost: 25 ◆ &nbsp;|&nbsp; 5% defect chance</div>
           <div class="option-title">Strict QA</div>
@@ -180,8 +211,8 @@
         <span class="round-label">Round <span id="outcome-round">1</span> Result</span>
       </div>
 
-      <div id="outcome-banner" class="outcome-banner outcome-good">
-        <div class="outcome-icon" id="outcome-icon">✓</div>
+      <div id="outcome-banner" class="outcome-banner outcome-good" role="status" aria-live="polite" aria-atomic="true">
+        <div class="outcome-icon" id="outcome-icon" aria-hidden="true">✓</div>
         <div class="outcome-title" id="outcome-title">Good Shipment</div>
         <div class="outcome-sub" id="outcome-sub">The buyer accepts the copper.</div>
       </div>
@@ -314,6 +345,8 @@
       </div>
     </div>
   </div>
+
+  </main>
 
   <script src="game.js"></script>
   <footer class="bottombar">
